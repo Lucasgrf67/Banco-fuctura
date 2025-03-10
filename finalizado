@@ -1,0 +1,354 @@
+//1. Classe Abstrata Conta // 
+
+
+
+abstract class Conta {
+    protected String numeroConta;
+    protected String titular;
+    protected double saldo;
+
+    public Conta(String titular) {
+        this.titular = titular;
+        this.numeroConta = gerarNumeroConta();
+        this.saldo = 0.0;
+    }
+
+    private String gerarNumeroConta() {
+        return "ACC" + (int) (Math.random() * 100000);
+    }
+
+    protected void alterarSaldo(double valor) {
+        this.saldo += valor;
+    }
+
+    public double getSaldo() {
+        return saldo;
+    }
+
+    public String getNumeroConta() {
+        return numeroConta;
+    }
+
+    public String getTitular() {
+        return titular;
+    }
+
+    public void exibirDados() {
+        System.out.println("\n🔹 Conta: " + numeroConta);
+        System.out.println("👤 Titular: " + titular);
+        System.out.println("💰 Saldo: R$ " + String.format("%.2f", saldo));
+    }
+
+
+
+
+//2. Classe ContaCorrente //
+
+class ContaCorrente extends Conta implements Tarifavel {
+    private static final double TAXA_SAQUE = 5.0; 
+
+    public ContaCorrente(String titular) {
+        super(titular);
+    }
+
+    public void sacar(double valor) {
+        if (valor + TAXA_SAQUE > saldo) {
+            System.out.println("❌ Saldo insuficiente para saque!");
+        } else {
+            alterarSaldo(-(valor + TAXA_SAQUE));
+            System.out.println("✅ Saque de R$ " + valor + " realizado com sucesso!");
+        }
+    }
+
+    public void depositar(double valor) {
+        if (valor > 0) {
+            alterarSaldo(valor);
+            System.out.println("✅ Depósito de R$ " + valor + " realizado com sucesso!");
+        } else {
+            System.out.println("❌ Valor de depósito inválido!");
+        }
+    }
+
+    public void aplicar(double valor, ContaPoupanca contaPoupanca) {
+        if (valor > saldo) {
+            System.out.println("❌ Saldo insuficiente para aplicação!");
+        } else {
+            alterarSaldo(-valor);
+            contaPoupanca.receberAplicacao(valor);
+            System.out.println("✅ Aplicação de R$ " + valor + " realizada com sucesso na Conta Poupança!");
+        }
+    }
+
+    @Override
+    public void aplicarTarifaMensal(double valor) {
+        alterarSaldo(-valor);
+        System.out.println("💸 Tarifa mensal de R$ " + valor + " aplicada!");
+    }
+
+    @Override
+    public void cobrarTaxa(double valor) {
+        alterarSaldo(-valor);
+        System.out.println("💰 Taxa de R$ " + valor + " cobrada!");
+    }
+}
+
+
+
+//3. Classe ContaPoupanca //
+
+
+class ContaPoupanca extends Conta {
+
+    public ContaPoupanca(String titular) {
+        super(titular);
+    }
+
+    public void receberAplicacao(double valor) {
+        alterarSaldo(valor);
+    }
+
+    public void resgatar(double valor, ContaCorrente contaCorrente) {
+        if (valor > saldo) {
+            System.out.println("❌ Saldo insuficiente na poupança!");
+        } else {
+            alterarSaldo(-valor);
+            contaCorrente.depositar(valor);
+            System.out.println("✅ Resgate de R$ " + valor + " realizado com sucesso para a Conta Corrente!");
+        }
+    }
+}
+
+
+
+
+//.4 Classe Principal (Interaface de interação)//
+
+import java.util.Scanner;
+
+public class Principal {
+    public static void main(String[] args) {
+        Scanner scanner = new Scanner(System.in);
+        ContaCorrente contaCorrente = null;
+        ContaPoupanca contaPoupanca = null;
+
+        System.out.println("🚀 Bem-vindo ao Banco Digital!");
+        System.out.print("👤 Informe o nome do titular: ");
+        String titular = scanner.nextLine();
+
+        System.out.println("\n📌 Escolha o tipo de conta:");
+        System.out.println("1️⃣ Conta Corrente");
+        System.out.println("2️⃣ Conta Poupança");
+        System.out.print("👉 Digite sua opção: ");
+        int escolha = scanner.nextInt();
+
+        if (escolha == 1) {
+            contaCorrente = new ContaCorrente(titular);
+        } else if (escolha == 2) {
+            contaPoupanca = new ContaPoupanca(titular);
+        } else {
+            System.out.println("❌ Opção inválida!");
+            System.exit(0);
+        }
+
+        System.out.print("\n💰 Deseja fazer um depósito inicial? (0 para nenhum): R$ ");
+        double depositoInicial = scanner.nextDouble();
+
+        if (contaCorrente != null) {
+            contaCorrente.depositar(depositoInicial);
+        } else if (contaPoupanca != null) {
+            contaPoupanca.receberAplicacao(depositoInicial);
+        }
+
+        while (true) {
+            System.out.println("\n📌 Escolha uma operação:");
+            System.out.println("1️⃣ Sacar");
+            System.out.println("2️⃣ Depositar");
+            System.out.println("3️⃣ Aplicar dinheiro na Poupança");
+            System.out.println("4️⃣ Resgatar da Poupança");
+            System.out.println("5️⃣ Exibir dados da conta");
+            System.out.println("0️⃣ Sair");
+            System.out.print("👉 Digite sua opção: ");
+            int opcao = scanner.nextInt();
+
+            if (opcao == 0) {
+                System.out.println("👋 Obrigado por utilizar nosso banco!");
+                break;
+            }
+
+            if (contaCorrente != null) {
+                switch (opcao) {
+                    case 1:
+                        System.out.print("💵 Informe o valor do saque: R$ ");
+                        double saque = scanner.nextDouble();
+                        contaCorrente.sacar(saque);
+                        break;
+                    case 2:
+                        System.out.print("💰 Informe o valor do depósito: R$ ");
+                        double deposito = scanner.nextDouble();
+                        contaCorrente.depositar(deposito);
+                        break;
+                    case 3:
+                        if (contaPoupanca == null) {
+                            contaPoupanca = new ContaPoupanca(titular);
+                        }
+                        System.out.print("📥 Informe o valor a aplicar na poupança: R$ ");
+                        double valorAplicacao = scanner.nextDouble();
+                        contaCorrente.aplicar(valorAplicacao, contaPoupanca);
+                        break;
+                    case 4:
+                        if (contaPoupanca != null) {
+                            System.out.print("📤 Informe o valor a resgatar: R$ ");
+                            double valorResgate = scanner.nextDouble();
+                            contaPoupanca.resgatar(valorResgate, contaCorrente);
+                        } else {
+                            System.out.println("❌ Você ainda não possui uma Conta Poupança!");
+                        }
+                        break;
+                    case 5:
+                        contaCorrente.exibirDados();
+                        break;
+                    default:
+                        System.out.println("❌ Opção inválida!");
+                }
+            } else {
+                System.out.println("❌ Operação não disponível para Conta Poupança.");
+            }
+        }
+
+        scanner.close();
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
